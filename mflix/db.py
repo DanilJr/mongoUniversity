@@ -321,18 +321,23 @@ to better understand the task.
 def add_comment(movie_id, user, comment, date):
     """
     Inserts a comment into the comments collection, with the following fields:
-
     - "name"
     - "email"
     - "movie_id"
     - "text"
     - "date"
-
     Name and email must be retrieved from the "user" object.
     """
-    # TODO: Create/Update Comments
-    # Construct the comment document to be inserted into MongoDB.
-    comment_doc = {'movie_id': ObjectId(movie_id), 'name': user.name, 'email': user.email, 'text': comment, 'date': date}
+    # : Create/Update Comments
+    # construct the comment document to be inserted into MongoDB
+    comment_doc = {
+        "movie_id": ObjectId(movie_id),
+        "name": user.name,
+        "email": user.email,
+        "text": comment,
+        "date": date
+    }
+
     return db.comments.insert_one(comment_doc)
 
 
@@ -342,14 +347,48 @@ def update_comment(comment_id, user_email, text, date):
     based by both comment _id field as well as the email field to doubly ensure
     the user has permission to edit this comment.
     """
-    # TODO: Create/Update Comments
-    # Use the user_email and comment_id to select the proper comment, then
-    # update the "text" and "date" of the selected comment.
+    # : Create/Update Comments
+    # use the user_email and comment_id to select the proper comment
+    # then update the "text" and "date" of the selected comment
     response = db.comments.update_one(
-        {"_id": comment_id, 'email': user_email},
-        {"$set": {'text': text, 'date': date}}, upsert=True
+        {"_id": ObjectId(comment_id), "email": user_email},
+        {"$set": {"text": text, "date": date}}
     )
+
     return response
+
+
+# def add_comment(movie_id, user, comment, date):
+#     """
+#     Inserts a comment into the comments collection, with the following fields:
+#
+#     - "name"
+#     - "email"
+#     - "movie_id"
+#     - "text"
+#     - "date"
+#
+#     Name and email must be retrieved from the "user" object.
+#     """
+#     # TODO: Create/Update Comments
+#     # Construct the comment document to be inserted into MongoDB.
+#     comment_doc = {'movie_id': ObjectId(movie_id), 'name': user.name, 'email': user.email, 'text': comment, 'date': date}
+#     return db.comments.insert_one(comment_doc)
+#
+#
+# def update_comment(comment_id, user_email, text, date):
+#     """
+#     Updates the comment in the comment collection. Queries for the comment
+#     based by both comment _id field as well as the email field to doubly ensure
+#     the user has permission to edit this comment.
+#     """
+#     # TODO: Create/Update Comments
+#     # Use the user_email and comment_id to select the proper comment, then
+#     # update the "text" and "date" of the selected comment.
+#     response = db.comments.update_one(
+#         {"_id": comment_id, 'email': user_email},
+#         {"$set": {'text': text, 'date': date}})
+#     return response
 
 
 def delete_comment(comment_id, user_email):
@@ -367,7 +406,7 @@ def delete_comment(comment_id, user_email):
 
     # TODO: Delete Comments
     # Use the user_email and comment_id to delete the proper comment.
-    response = db.comments.delete_one({"_id": ObjectId(comment_id)})
+    response = db.comments.delete_one({"_id": ObjectId(comment_id), "email": user_email})
     return response
 
 
@@ -535,7 +574,12 @@ def most_active_commenters():
     """
     # TODO: User Report
     # Return the 20 users who have commented the most on MFlix.
-    pipeline = []
+    pipeline = [{'$group': {
+        '_id': '$email',
+        'count': {
+            '$sum': 1
+        }
+    }}, {'$sort': {'count': -1}}, {'$limit': 20}]
 
     rc = db.comments.read_concern # you may want to change this read concern!
     comments = db.comments.with_options(read_concern=rc)
